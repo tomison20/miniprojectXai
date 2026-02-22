@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+SkillSync/client/node_modules/
+SkillSync/server/node_modules/
+
+# Environment Variables
+.env
+SkillSync/server/.env
+
+# Build outputs
+dist/
+build/
+SkillSync/client/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE/OS files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
