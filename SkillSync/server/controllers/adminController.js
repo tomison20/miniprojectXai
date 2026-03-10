@@ -146,3 +146,180 @@ export const toggleUserStatus = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Edit user details as admin
+// @route   PUT /api/admin/users/:id
+// @access  Private (Admin only)
+export const updateUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.role === 'admin') {
+            return res.status(400).json({ message: 'Cannot edit another administrator' });
+        }
+
+        const { name, email, role, headline, course, bio } = req.body;
+
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.role = role || user.role;
+        user.headline = headline !== undefined ? headline : user.headline;
+        user.course = course !== undefined ? course : user.course;
+        user.bio = bio !== undefined ? bio : user.bio;
+
+        if (role === 'organizer') {
+            user.userType = 'organizer';
+        } else if (role === 'student' && user.userType === 'organizer') {
+            user.userType = 'freelancer';
+        }
+
+        const updatedUser = await user.save();
+        res.json(updatedUser);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Delete user completely
+// @route   DELETE /api/admin/users/:id
+// @access  Private (Admin only)
+export const deleteUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.role === 'admin') {
+            return res.status(400).json({ message: 'Cannot delete another administrator' });
+        }
+
+        await User.deleteOne({ _id: user._id });
+
+        res.json({ message: 'User removed from the database successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all organizations
+// @route   GET /api/admin/organizations
+// @access  Private (Admin only)
+export const getOrganizations = async (req, res) => {
+    try {
+        const organizations = await Organization.find()
+            .populate('createdBy', 'name email')
+            .sort('-createdAt');
+        res.json(organizations);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Edit organization details
+// @route   PUT /api/admin/organizations/:id
+// @access  Private (Admin only)
+export const updateOrganization = async (req, res) => {
+    try {
+        const org = await Organization.findById(req.params.id);
+        if (!org) {
+            return res.status(404).json({ message: 'Organization not found' });
+        }
+
+        const { name, uniqueCode, domain, themeColor } = req.body;
+
+        org.name = name || org.name;
+        org.uniqueCode = uniqueCode || org.uniqueCode;
+        org.domain = domain !== undefined ? domain : org.domain;
+        org.themeColor = themeColor || org.themeColor;
+
+        const updatedOrg = await org.save();
+        res.json(updatedOrg);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Delete organization completely
+// @route   DELETE /api/admin/organizations/:id
+// @access  Private (Admin only)
+export const deleteOrganization = async (req, res) => {
+    try {
+        const org = await Organization.findById(req.params.id);
+
+        if (!org) {
+            return res.status(404).json({ message: 'Organization not found' });
+        }
+
+        // Before deleting an org, we'd theoretically want to alert users or reassign them, 
+        // but for now we follow the exact cascading delete request.
+        await Organization.deleteOne({ _id: org._id });
+
+        res.json({ message: 'Organization removed from the database successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all platform gigs (for admin monitoring)
+// @route   GET /api/admin/gigs
+// @access  Private (Admin only)
+import Gig from '../models/Gig.js'; // Ensure Gig is imported
+export const getAllGigs = async (req, res) => {
+    try {
+        const gigs = await Gig.find()
+            .populate('organizer', 'name email')
+            .populate('organization', 'name uniqueCode')
+            .populate('assignedTo', 'name email')
+            .sort('-createdAt');
+        res.json(gigs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all user portfolios across the platform
+// @route   GET /api/admin/portfolios
+// @access  Private (Admin only)
+export const getAllPortfolios = async (req, res) => {
+    try {
+        // Aggregate to extract portfolios from all students into a flat list
+        const aggregation = await User.aggregate([
+            { $match: { role: 'student', portfolio: { $exists: true, $not: { $size: 0 } } } },
+            { $unwind: '$portfolio' },
+            {
+                $lookup: {
+                    from: 'organizations',
+                    localField: 'organization',
+                    foreignField: '_id',
+                    as: 'orgDetails'
+                }
+            },
+            { $unwind: { path: '$orgDetails', preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    userId: '$_id',
+                    userName: '$name',
+                    userEmail: '$email',
+                    userCourse: '$course',
+                    organizationName: '$orgDetails.name',
+                    portfolioId: '$portfolio._id',
+                    title: '$portfolio.title',
+                    description: '$portfolio.description',
+                    link: '$portfolio.link',
+                    image: '$portfolio.image',
+                    date: '$portfolio.date'
+                }
+            },
+            { $sort: { 'date': -1 } }
+        ]);
+
+        res.json(aggregation);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

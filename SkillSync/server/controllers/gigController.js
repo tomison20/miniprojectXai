@@ -85,7 +85,7 @@ export const getGigById = async (req, res) => {
 
         // Also fetch applications/bids for this gig
         const bids = await Bid.find({ gig: gig._id })
-            .populate('freelancer', 'name email')
+            .populate('freelancer', 'name email resume')
             .sort({ createdAt: -1 });
 
         res.json({ ...gig.toObject(), bids });
@@ -317,7 +317,7 @@ export const getMyApplications = async (req, res) => {
             .populate({
                 path: 'gig',
                 select: 'title description deadline status organizer organization',
-                populate: { path: 'organizer', select: 'name' }
+                populate: { path: 'organizer', select: 'name email' }
             })
             .sort({ createdAt: -1 });
 

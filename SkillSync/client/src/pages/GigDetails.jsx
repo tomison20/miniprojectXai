@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 
 const GigDetails = () => {
@@ -21,7 +21,8 @@ const GigDetails = () => {
                 setGig(gigRes.data);
 
                 // Fetch applications if organizer
-                if (userRes.data._id === gigRes.data.organizer._id) {
+                const orgId = gigRes.data.organizer?._id || gigRes.data.organizer;
+                if (userRes.data._id === orgId) {
                     // This assumes the backend returns bids with the gig or has a specific route
                     // For now, checking if gig.bids exists or needs separate fetch
                     setApplications(gigRes.data.bids || []);
@@ -71,7 +72,7 @@ const GigDetails = () => {
 
     if (loading || !gig || !user) return <div className="container" style={{ padding: '4rem' }}>Loading details...</div>;
 
-    const isOrganizer = user._id === (gig.organizer._id || gig.organizer);
+    const isOrganizer = user._id === (gig.organizer?._id || gig.organizer);
     const isAssigned = gig.assignedTo?._id === user._id || gig.assignedTo === user._id;
 
     return (
@@ -98,8 +99,18 @@ const GigDetails = () => {
                     {/* Workflow: Submission (Student) */}
                     {isAssigned && gig.status === 'assigned' && (
                         <div style={{ marginTop: '2rem', padding: '2rem', background: '#F8FAFC', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
-                            <h4>Submit Your Work</h4>
-                            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>Provide a link to your completed project or documentation.</p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', margin: 0 }}>Provide a link to your completed project or documentation.</p>
+                                {gig.organizer?.email && (
+                                    <a 
+                                        href={`mailto:${gig.organizer.email}?subject=Question regarding Opportunity: ${gig.title}`} 
+                                        className="btn btn-outline btn-sm" 
+                                        style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'white' }}
+                                    >
+                                        <FaEnvelope /> Contact Organizer
+                                    </a>
+                                )}
+                            </div>
                             <form onSubmit={handleSubmitWork}>
                                 <div className="input-group">
                                     <label className="label">Submission Link</label>
@@ -126,16 +137,20 @@ const GigDetails = () => {
                 </div>
 
                 <div className="card">
-                    <h3>Organizer</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '1rem', fontWeight: 'bold' }}>
-                            {gig.organizer.name?.charAt(0)}
-                        </div>
-                        <div>
-                            <p style={{ fontWeight: 600, margin: 0 }}>{gig.organizer.name}</p>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>{user?.organization?.name}</p>
-                        </div>
-                    </div>
+                    {gig.organizer && (
+                        <>
+                            <h3>Organizer</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '1rem', fontWeight: 'bold' }}>
+                                    {gig.organizer.name?.charAt(0) || '?'}
+                                </div>
+                                <div>
+                                    <Link to={`/network/student/${gig.organizer._id}`} style={{ fontWeight: 600, margin: 0, color: 'var(--color-primary)', textDecoration: 'none' }}>{gig.organizer.name || 'Unknown'}</Link>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>{user?.organization?.name}</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     {/* Workflow: Application (Student) */}
                     {!isOrganizer && !isAssigned && gig.status === 'open' && (
@@ -155,8 +170,13 @@ const GigDetails = () => {
                         <div>
                             <h4>Applications</h4>
                             {applications.length > 0 ? applications.map(app => (
-                                <div key={app._id} style={{ padding: '1rem', border: '1px solid var(--color-border)', borderRadius: '4px', marginBottom: '1rem' }}>
-                                    <p style={{ fontWeight: 600, margin: '0 0 0.5rem' }}>{app.freelancer?.name || 'Student'}</p>
+                                <div key={app._id} style={{ padding: '1rem', border: '1px solid var(--color-border)', borderRadius: '4px', marginBottom: '1rem', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <Link to={`/network/student/${app.freelancer?._id}`} style={{ fontWeight: 600, margin: 0, color: 'var(--color-primary)', textDecoration: 'none' }}>{app.freelancer?.name || 'Student'}</Link>
+                                        <Link to={`/network/student/${app.freelancer?._id}`} className="btn btn-outline btn-sm" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', textDecoration: 'none' }}>
+                                            View Profile
+                                        </Link>
+                                    </div>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>{app.proposal}</p>
                                     <button onClick={() => handleApproveApplication(app._id)} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>Assign Student</button>
                                 </div>

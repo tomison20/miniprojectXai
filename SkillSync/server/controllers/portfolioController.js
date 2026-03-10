@@ -42,11 +42,34 @@ export const getMyPortfolio = async (req, res) => {
     }
 };
 
+// @desc    Get all student portfolios for an organizer's organization
+// @route   GET /api/portfolios/organization
+// @access  Private (Organizer)
+export const getOrganizationPortfolios = async (req, res) => {
+    try {
+        // Find all portfolios in the same organization as the requesting user
+        const portfolios = await Portfolio.find({
+            organization: req.user.organization
+        })
+        .populate('student', 'name avatar headline')
+        .sort('-createdAt');
+        
+        res.json(portfolios);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Create portfolio item (with optional PDF)
 // @route   POST /api/portfolios
 export const createPortfolioItem = async (req, res) => {
     try {
-        const { title, description, link, projectLink, image } = req.body;
+        const { title, description, link, projectLink, image, skills, startDate, endDate, currentlyWorking, contributors } = req.body;
+        
+        // Parse JSON strings if sent via FormData
+        const parsedSkills = typeof skills === 'string' ? JSON.parse(skills || '[]') : (skills || []);
+        const parsedContributors = typeof contributors === 'string' ? JSON.parse(contributors || '[]') : (contributors || []);
+        
         const item = await Portfolio.create({
             student: req.user._id,
             organization: req.user.organization,
@@ -55,6 +78,11 @@ export const createPortfolioItem = async (req, res) => {
             link,
             projectLink,
             image,
+            skills: parsedSkills,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            currentlyWorking: currentlyWorking === 'true' || currentlyWorking === true,
+            contributors: parsedContributors,
             portfolioPDF: req.file ? `/uploads/${req.file.filename}` : undefined
         });
         res.status(201).json(item);
@@ -70,7 +98,13 @@ export const updatePortfolioItem = async (req, res) => {
         const item = await Portfolio.findOne({ _id: req.params.id, student: req.user._id });
         if (!item) return res.status(404).json({ message: 'Item not found' });
 
-        Object.assign(item, req.body);
+        // Parse JSON strings if sent via FormData
+        const body = { ...req.body };
+        if (typeof body.skills === 'string') body.skills = JSON.parse(body.skills || '[]');
+        if (typeof body.contributors === 'string') body.contributors = JSON.parse(body.contributors || '[]');
+        if (body.currentlyWorking !== undefined) body.currentlyWorking = body.currentlyWorking === 'true' || body.currentlyWorking === true;
+
+        Object.assign(item, body);
         if (req.file) {
             item.portfolioPDF = `/uploads/${req.file.filename}`;
         }

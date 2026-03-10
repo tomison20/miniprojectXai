@@ -1,4 +1,6 @@
 import User from '../models/User.js';
+import Portfolio from '../models/Portfolio.js';
+import Achievement from '../models/Achievement.js';
 
 // @desc    Get network students
 // @route   GET /api/users/network
@@ -20,9 +22,30 @@ export const getNetworkStudents = async (req, res) => {
             role: 'student',
             organization: req.user.organization,
             isDiscoverable: true
-        }).select('name avatar skills course github linkedin portfolioWebsite');
+        }).select('name avatar skills course github linkedin portfolioWebsite resume');
 
         res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get members of the same organization (Organizers)
+// @route   GET /api/users/organization/members
+// @access  Private (Organizer/Admin)
+export const getOrganizationMembers = async (req, res) => {
+    try {
+        if (!req.user.organization) {
+            return res.status(400).json({ message: 'User does not belong to an organization.' });
+        }
+
+        const members = await User.find({
+            organization: req.user.organization,
+            role: 'organizer',
+            _id: { $ne: req.user._id } // Exclude the requesting user
+        }).select('name email avatar');
+
+        res.json(members);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -35,7 +58,6 @@ export const getPublicStudentProfile = async (req, res) => {
     try {
         const user = await User.findOne({
             _id: req.params.id,
-            role: 'student',
             organization: req.user.organization,
             isDiscoverable: true
         }).select('-password -email'); // Exclude sensitive info
@@ -45,7 +67,17 @@ export const getPublicStudentProfile = async (req, res) => {
             throw new Error('Student not found or not discoverable');
         }
 
-        res.json(user);
+        // Fetch dynamic Portfolio and Achievements
+        const [portfolios, achievements] = await Promise.all([
+            Portfolio.find({ student: user._id }).sort('-createdAt'),
+            Achievement.find({ student: user._id }).sort('-date')
+        ]);
+
+        res.json({
+            ...user.toObject(),
+            portfolio: portfolios,
+            achievements: achievements
+        });
     } catch (error) {
         res.status(404).json({ message: error.message });
     }

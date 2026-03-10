@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { FaImage, FaUserCircle, FaPen, FaLink } from 'react-icons/fa';
 
 const OrganizerProfile = () => {
     const { user, login } = useAuth();
+    // eslint-disable-next-line no-unused-vars
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -115,7 +117,7 @@ const OrganizerProfile = () => {
 
                         {/* Basic Info */}
                         <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid #7C3AED' }}>
-                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem' }}>🖼️ Organizational Setup</h3>
+                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaImage /> Organizational Setup</h3>
                             <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 {form.avatar ? (
                                     <img
@@ -125,7 +127,7 @@ const OrganizerProfile = () => {
                                     />
                                 ) : (
                                     <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '2rem' }}>
-                                        👤
+                                        <FaUserCircle size={20} />
                                     </div>
                                 )}
                                 <div>
@@ -136,7 +138,7 @@ const OrganizerProfile = () => {
                         </div>
 
                         <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem' }}>📝 Organizer Context</h3>
+                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaPen /> Organizer Context</h3>
                             <div className="input-group">
                                 <label className="label">Role Title / Headline</label>
                                 <input className="input" value={form.headline} onChange={e => setForm({ ...form, headline: e.target.value })} placeholder="e.g. CSR Representative | Technical Recruiter" />
@@ -149,7 +151,7 @@ const OrganizerProfile = () => {
 
                         {/* Social Links */}
                         <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem' }}>🔗 Organizational Links</h3>
+                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaLink /> Organizational Links</h3>
                             <div className="input-group">
                                 <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" /></svg>

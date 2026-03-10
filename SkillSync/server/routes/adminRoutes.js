@@ -1,5 +1,5 @@
 import express from 'express';
-import { seedData, getOrgRequests, manageOrgRequest, getPlatformStats, getUsers, toggleUserStatus } from '../controllers/adminController.js';
+import { seedData, getOrgRequests, manageOrgRequest, getPlatformStats, getUsers, toggleUserStatus, updateUser, deleteUser, getOrganizations, updateOrganization, deleteOrganization, getAllGigs, getAllPortfolios } from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -20,5 +20,22 @@ router.route('/users')
 
 router.route('/users/:id/disable')
     .put(protect, authorize('admin'), toggleUserStatus);
+
+router.route('/users/:id')
+    .put(protect, authorize('admin'), updateUser)
+    .delete(protect, authorize('admin'), deleteUser);
+
+router.route('/organizations')
+    .get(protect, authorize('admin'), getOrganizations);
+
+router.route('/organizations/:id')
+    .put(protect, authorize('admin'), updateOrganization)
+    .delete(protect, authorize('admin'), deleteOrganization);
+
+router.route('/gigs')
+    .get(protect, authorize('admin'), getAllGigs);
+
+router.route('/portfolios')
+    .get(protect, authorize('admin'), getAllPortfolios);
 
 export default router;

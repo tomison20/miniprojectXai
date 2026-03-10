@@ -17,6 +17,7 @@ import Volunteering from './pages/Volunteering';
 import CreateGig from './pages/CreateGig';
 import CreateEvent from './pages/CreateEvent';
 import GigDetails from './pages/GigDetails';
+import EventDetails from './pages/EventDetails';
 import Profile from './pages/Profile';
 import OrganizerVolunteers from './pages/OrganizerVolunteers';
 import OrganizerProfile from './pages/OrganizerProfile';
@@ -45,6 +46,7 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/gigs/:id" element={<GigDetails />} />
+                <Route path="/volunteering/:id" element={<EventDetails />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
 
@@ -53,9 +55,14 @@ function App() {
                 <Route path="/dashboard/student" element={<StudentDashboard />} />
                 <Route path="/dashboard/student/profile" element={<StudentProfile />} />
                 <Route path="/network" element={<Network />} />
-                <Route path="/network/student/:id" element={<StudentPublicProfile />} />
+              </Route>
+
+              {/* Communications & Profiles (Shared) */}
+              <Route element={<ProtectedRoute allowedRoles={['student', 'organizer', 'admin']} />}>
                 <Route path="/messages" element={<Inbox />} />
                 <Route path="/chat/:id" element={<Chat />} />
+                <Route path="/chat/group/:id" element={<Chat isGroup={true} />} />
+                <Route path="/network/student/:id" element={<StudentPublicProfile />} />
               </Route>
 
               {/* Organizer Only Routes */}

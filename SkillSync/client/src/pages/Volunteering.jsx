@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
 
 const Volunteering = () => {
     const { user } = useAuth();
@@ -35,10 +36,10 @@ const Volunteering = () => {
                         <h3>{event.title}</h3>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{event.description}</p>
                         <div style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                            <p>📍 {event.location}</p>
-                            <p>📅 {new Date(event.date).toLocaleDateString()}</p>
+                            <p style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaMapMarkerAlt /> {event.location}</p>
+                            <p style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaCalendarAlt /> {new Date(event.date).toLocaleDateString()}</p>
                         </div>
-                        <button className="btn btn-outline" style={{ width: '100%' }}>View Roles</button>
+                        <Link to={`/volunteering/${event._id}`} className="btn btn-outline" style={{ marginTop: '1rem', width: '100%', display: 'block', textAlign: 'center', textDecoration: 'none' }}>View Roles</Link>
                     </div>
                 ))}
                 {events.length === 0 && <p>No upcoming volunteer events.</p>}

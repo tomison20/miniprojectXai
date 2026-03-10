@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { FaImage, FaShieldAlt, FaFilePdf, FaUserCircle, FaPen, FaLink } from 'react-icons/fa';
 
 const StudentProfile = () => {
     const { user, login } = useAuth();
@@ -20,7 +21,8 @@ const StudentProfile = () => {
         twitter: '',
         portfolioWebsite: '',
         customLinkUrl: '',
-        customLinkName: ''
+        customLinkName: '',
+        resume: ''
     });
 
     useEffect(() => {
@@ -40,7 +42,8 @@ const StudentProfile = () => {
                     twitter: data.twitter || '',
                     portfolioWebsite: data.portfolioWebsite || '',
                     customLinkUrl: data.customLinkUrl || '',
-                    customLinkName: data.customLinkName || ''
+                    customLinkName: data.customLinkName || '',
+                    resume: data.resume || ''
                 });
             } catch (error) {
                 console.error('Failed to fetch profile:', error);
@@ -91,6 +94,30 @@ const StudentProfile = () => {
         }
     };
 
+    const uploadResumeHandler = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('portfolioPDF', file); // Reusing the PDF storage config on the backend
+
+        try {
+            setSaving(true);
+            const { data } = await api.post('/upload/pdf', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            setForm({ ...form, resume: data.url });
+            alert('Resume uploaded successfully. Remember to save your profile!');
+        } catch (error) {
+            console.error(error);
+            alert('Resume upload failed. Make sure the file is a PDF.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) return (
         <div className="loading-screen">
             <div className="loader"></div>
@@ -112,9 +139,16 @@ const StudentProfile = () => {
                                 Edit Your Profile
                             </h1>
                         </div>
-                        <Link to="/dashboard/student" className="btn" style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', textDecoration: 'none' }}>
-                            ← Back to Dashboard
-                        </Link>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            {profile?.resume && (
+                                <a href={`http://localhost:5000${profile.resume}`} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#DC2626', color: 'white', border: 'none', textDecoration: 'none' }}>
+                                    <FaFilePdf /> View Resume
+                                </a>
+                            )}
+                            <Link to="/dashboard/student" className="btn" style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', textDecoration: 'none' }}>
+                                ← Back to Dashboard
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -125,7 +159,7 @@ const StudentProfile = () => {
 
                         {/* Basic Info */}
                         <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem' }}>🖼️ Profile Picture</h3>
+                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaImage /> Profile Picture</h3>
                             <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 {form.avatar ? (
                                     <img
@@ -135,7 +169,7 @@ const StudentProfile = () => {
                                     />
                                 ) : (
                                     <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '2rem' }}>
-                                        👤
+                                        <FaUserCircle size={20} />
                                     </div>
                                 )}
                                 <div>
@@ -146,7 +180,7 @@ const StudentProfile = () => {
                         </div>
 
                         <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem' }}>📝 Academic Info</h3>
+                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaPen /> Academic Info</h3>
                             <div className="input-group">
                                 <label className="label">Headline</label>
                                 <input className="input" value={form.headline} onChange={e => setForm({ ...form, headline: e.target.value })} placeholder="e.g. Computer Science Sophomore | React Developer" />
@@ -163,11 +197,25 @@ const StudentProfile = () => {
                                 <label className="label">Skills (comma separated)</label>
                                 <input className="input" value={form.skills} onChange={e => setForm({ ...form, skills: e.target.value })} placeholder="React, Python, Design..." />
                             </div>
+                            <div className="input-group">
+                                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.362 2c4.156 0 2.638 6 2.638 6s6-1.65 6 2.457v11.543h-16v-20h7.362zm.827-2h-10.189v24h20v-14.386c0-2.391-6.648-9.614-9.811-9.614zm4.811 13h-10v-1h10v1zm0 2h-10v1h10v-1zm0 3h-10v1h10v-1z"/></svg>
+                                    Resume (PDF)
+                                </label>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <input type="file" accept=".pdf" onChange={uploadResumeHandler} style={{ color: 'rgba(255,255,255,0.8)' }} />
+                                    {form.resume && (
+                                        <a href={`http://localhost:5000${form.resume}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+                                            View Uploaded Resume
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Privacy & Discovery */}
                         <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem' }}>🛡️ Privacy & Discovery</h3>
+                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaShieldAlt /> Privacy & Discovery</h3>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <div>
                                     <h4 style={{ margin: '0 0 0.25rem', fontSize: '1rem', color: 'white' }}>College Network Discoverability</h4>
@@ -197,7 +245,7 @@ const StudentProfile = () => {
 
                         {/* Social Links */}
                         <div className="card" style={{ marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem' }}>🔗 Social & Portfolio Links</h3>
+                            <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaLink /> Social & Portfolio Links</h3>
                             <div className="input-group">
                                 <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
@@ -215,7 +263,7 @@ const StudentProfile = () => {
                             <div className="input-group">
                                 <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                                    Twitter / X
+                                    X
                                 </label>
                                 <input className="input" value={form.twitter} onChange={e => setForm({ ...form, twitter: e.target.value })} placeholder="https://x.com/username" />
                             </div>

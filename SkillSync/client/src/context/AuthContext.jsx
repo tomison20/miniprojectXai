@@ -7,6 +7,14 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const applyBranding = (org) => {
+        if (!org) return;
+        const root = document.documentElement;
+        // Institutional theme color
+        root.style.setProperty('--primary-color', org.themeColor || '#0f172a');
+        // Add more dynamic variables if needed (e.g., banner height, specific accents)
+    };
+
     useEffect(() => {
         const checkAuth = async () => {
             const userInfo = localStorage.getItem('userInfo');
@@ -47,14 +55,6 @@ export const AuthProvider = ({ children }) => {
         checkAuth();
     }, []);
 
-    const applyBranding = (org) => {
-        if (!org) return;
-        const root = document.documentElement;
-        // Institutional theme color
-        root.style.setProperty('--primary-color', org.themeColor || '#0f172a');
-        // Add more dynamic variables if needed (e.g., banner height, specific accents)
-    };
-
     const login = (userData) => {
         localStorage.setItem('userInfo', JSON.stringify(userData));
         setUser(userData);
@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     return useContext(AuthContext);
 };

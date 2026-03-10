@@ -57,6 +57,9 @@ const userSchema = new mongoose.Schema({
 
     // Verification
     isVerified: { type: Boolean, default: false }, // For "Institutional" trust
+    
+    // Career Documents
+    resume: { type: String, default: '' }, // URL to uploaded Resume PDF 
 
     createdAt: { type: Date, default: Date.now }
 });

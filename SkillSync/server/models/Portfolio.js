@@ -9,6 +9,11 @@ const portfolioSchema = new mongoose.Schema({
     projectLink: { type: String },
     image: { type: String },
     portfolioPDF: { type: String },
+    skills: [{ type: String }],
+    startDate: { type: Date },
+    endDate: { type: Date },
+    currentlyWorking: { type: Boolean, default: false },
+    contributors: [{ type: String }],
     createdAt: { type: Date, default: Date.now }
 });
 

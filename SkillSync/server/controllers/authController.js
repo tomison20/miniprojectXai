@@ -198,7 +198,11 @@ export const getUserProfile = async (req, res) => {
             throw new Error('Not authorized, no user context');
         }
 
-        const user = await User.findById(req.user._id).select('-password').populate('organization', 'name uniqueCode');
+        const user = await User.findById(req.user._id)
+            .select('-password')
+            .populate('organization', 'name uniqueCode')
+            .populate('followers', 'name avatar course')
+            .populate('following', 'name avatar course');
 
         if (user) {
             res.json(user);
@@ -221,7 +225,7 @@ export const updateUserProfile = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const { headline, bio, course, isDiscoverable, skills, github, linkedin, twitter, portfolioWebsite, customLinkUrl, customLinkName, avatar } = req.body;
+        const { headline, bio, course, isDiscoverable, skills, github, linkedin, twitter, portfolioWebsite, customLinkUrl, customLinkName, avatar, resume } = req.body;
 
         if (headline !== undefined) user.headline = headline;
         if (bio !== undefined) user.bio = bio;
@@ -235,6 +239,7 @@ export const updateUserProfile = async (req, res) => {
         if (customLinkUrl !== undefined) user.customLinkUrl = customLinkUrl;
         if (customLinkName !== undefined) user.customLinkName = customLinkName;
         if (avatar !== undefined) user.avatar = avatar;
+        if (resume !== undefined) user.resume = resume;
 
         const updatedUser = await user.save();
         const populated = await User.findById(updatedUser._id).select('-password').populate('organization', 'name uniqueCode');

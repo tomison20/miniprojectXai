@@ -4,7 +4,11 @@ import {
     getEvents,
     getEventById,
     registerForEvent,
-    verifyAttendance
+    verifyAttendance,
+    updateEvent,
+    deleteEvent,
+    removeVolunteer,
+    exportEventVolunteers
 } from '../controllers/eventController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
@@ -15,7 +19,9 @@ router.route('/')
     .get(protect, getEvents);
 
 router.route('/:id')
-    .get(getEventById);
+    .get(getEventById)
+    .put(protect, authorize('organizer', 'admin'), updateEvent)
+    .delete(protect, authorize('organizer', 'admin'), deleteEvent);
 
 router.route('/:id/register')
     .post(protect, authorize('student'), registerForEvent);
@@ -23,5 +29,11 @@ router.route('/:id/register')
 // Workflow
 router.route('/:id/verify')
     .post(protect, authorize('organizer', 'admin'), verifyAttendance);
+
+router.route('/:id/volunteers/:volunteerId')
+    .delete(protect, authorize('organizer', 'admin'), removeVolunteer);
+
+router.route('/:id/export')
+    .get(protect, authorize('organizer', 'admin'), exportEventVolunteers);
 
 export default router;

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import LogoLoop from '../components/UI/LogoLoop';
-import { FaGithub, FaLinkedin, FaTwitter, FaGlobe, FaLink, FaEnvelope, FaUserPlus, FaUserCheck } from 'react-icons/fa';
+import { FaGithub, FaLinkedin, FaGlobe, FaLink, FaEnvelope, FaUserPlus, FaUserCheck, FaFilePdf, FaTrophy } from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
 
 const StudentPublicProfile = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const { user: currentUser } = useAuth();
     const [profile, setProfile] = useState(null);
     const [isFollowing, setIsFollowing] = useState(false);
@@ -62,16 +64,16 @@ const StudentPublicProfile = () => {
         <div className="container" style={{ padding: '4rem 1.5rem', textAlign: 'center', minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--color-error)' }}>Oops!</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem' }}>{error}</p>
-            <Link to="/network" className="btn btn-primary">Back to Network</Link>
+            <button onClick={() => navigate(-1)} className="btn btn-primary">Go Back</button>
         </div>
     );
 
     return (
         <div className="container animate-fade-in" style={{ padding: '4rem 0', maxWidth: '900px' }}>
-            <Link to="/network" style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', marginBottom: '2rem', fontWeight: 500 }}>
+            <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', marginBottom: '2rem', fontWeight: 500, cursor: 'pointer', fontSize: '1rem' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                Back to Directory
-            </Link>
+                Back
+            </button>
 
             {/* Profile Header Card */}
             <div className="card" style={{ padding: '2.5rem', marginBottom: '2rem', display: 'flex', gap: '2.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -111,17 +113,26 @@ const StudentPublicProfile = () => {
                                 </Link>
                             </div>
                         )}
+
+                        {profile.resume && (
+                            <div style={{ display: 'flex' }}>
+                                <a href={`http://localhost:5000${profile.resume}`} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0.6rem 1.2rem', backgroundColor: '#DC2626' }}>
+                                    <FaFilePdf /> View Resume
+                                </a>
+                            </div>
+                        )}
                     </div>
 
-                    {(profile.github || profile.linkedin || profile.twitter || profile.portfolioWebsite || profile.customLinkUrl) && (
+                    {(profile.github || profile.linkedin || profile.twitter || profile.portfolioWebsite || profile.customLinkUrl || profile.resume) && (
                         <div style={{ display: 'flex', marginTop: '1.5rem', overflow: 'hidden', padding: '10px 0' }}>
                             <div style={{ width: '100%', maxWidth: '600px', marginLeft: '-15px' }}>
                                 <LogoLoop
                                     logos={[
                                         ...(profile.github ? [{ node: <FaGithub size={24} color="#1E293B" />, title: 'GitHub', href: profile.github }] : []),
                                         ...(profile.linkedin ? [{ node: <FaLinkedin size={24} color="#0A66C2" />, title: 'LinkedIn', href: profile.linkedin }] : []),
-                                        ...(profile.twitter ? [{ node: <FaTwitter size={24} color="#1E293B" />, title: 'Twitter', href: profile.twitter }] : []),
+                                        ...(profile.twitter ? [{ node: <FaXTwitter size={24} color="#1E293B" />, title: 'X', href: profile.twitter }] : []),
                                         ...(profile.portfolioWebsite ? [{ node: <FaGlobe size={24} color="#059669" />, title: 'Portfolio', href: profile.portfolioWebsite }] : []),
+                                        ...(profile.resume ? [{ node: <FaFilePdf size={24} color="#DC2626" />, title: 'Resume', href: `http://localhost:5000${profile.resume}` }] : []),
                                         ...(profile.customLinkUrl ? [{ node: <FaLink size={24} color="#6366F1" />, title: profile.customLinkName || 'Link', href: profile.customLinkUrl }] : [])
                                     ]}
                                     speed={120}
@@ -164,10 +175,34 @@ const StudentPublicProfile = () => {
                         <h3 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>Portfolio Projects</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
                             {profile.portfolio.map((item, index) => (
-                                <div key={index} style={{ padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
+                                <div key={item._id || index} style={{ padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column' }}>
                                     <h4 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem' }}>{item.title}</h4>
-                                    {item.description && <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{item.description}</p>}
-                                    {item.link && <a href={item.link} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500 }}>View Project →</a>}
+                                    {item.description && <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--text-secondary)', flex: 1 }}>{item.description}</p>}
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+                                        {(item.link || item.projectLink) && <a href={item.projectLink || item.link} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500 }}>View Project →</a>}
+                                        {item.portfolioPDF && <a href={`http://localhost:5000${item.portfolioPDF}`} target="_blank" rel="noreferrer" style={{ color: '#DC2626', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500, marginLeft: '1rem' }}><FaFilePdf /> PDF Document</a>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Achievements Summary */}
+                {(profile.achievements && profile.achievements.length > 0) && (
+                    <div className="card" style={{ gridColumn: '1 / -1' }}>
+                        <h3 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>Awards & Achievements</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {profile.achievements.map((ach, index) => (
+                                <div key={ach._id || index} style={{ padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <FaTrophy size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 style={{ margin: '0 0 0.3rem', fontSize: '1.1rem' }}>{ach.title}</h4>
+                                        {ach.description && <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{ach.description}</p>}
+                                        {ach.certificateLink && <a href={ach.certificateLink} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500 }}>View Certificate →</a>}
+                                    </div>
                                 </div>
                             ))}
                         </div>

@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { FaUsers, FaFileExport, FaCertificate, FaCheck, FaTimes, FaEnvelope, FaClipboardList, FaFilePdf, FaCalendarAlt, FaTrash } from 'react-icons/fa';
 
 const OrganizerVolunteers = () => {
     const { user } = useAuth();
+    
+    // Global Tab State
+    const [activeTab, setActiveTab] = useState('gigs'); // 'gigs' or 'events'
+
+    // --- GIG STATES ---
     const [opportunities, setOpportunities] = useState([]);
     const [selectedOpp, setSelectedOpp] = useState('');
     const [applications, setApplications] = useState([]);
@@ -13,6 +20,13 @@ const OrganizerVolunteers = () => {
     const [loading, setLoading] = useState(false);
     const [loadingOpps, setLoadingOpps] = useState(true);
     const [emailSending, setEmailSending] = useState({});
+
+    // --- EVENT STATES ---
+    const [events, setEvents] = useState([]);
+    const [selectedEventId, setSelectedEventId] = useState('');
+    const [eventDetails, setEventDetails] = useState(null);
+    const [loadingEvents, setLoadingEvents] = useState(false);
+    const [loadingEventDetails, setLoadingEventDetails] = useState(false);
 
     // Fetch organizer's opportunities for the dropdown
     useEffect(() => {
@@ -29,7 +43,6 @@ const OrganizerVolunteers = () => {
         fetchOpps();
     }, [user._id]);
 
-    // Fetch applications when an opportunity is selected
     const fetchApplications = async (oppId) => {
         if (!oppId) {
             setApplications([]);
@@ -57,6 +70,61 @@ const OrganizerVolunteers = () => {
         fetchApplications(e.target.value);
     };
 
+    // --- EVENT EFFECTS & HANDLERS ---
+    useEffect(() => {
+        if (activeTab === 'events') {
+            const fetchEvents = async () => {
+                setLoadingEvents(true);
+                try {
+                    const { data } = await api.get('/events');
+                    // Filter to events where user is organizer or co-organizer
+                    const managedEvents = data.filter(e => 
+                        (e.organizer?._id || e.organizer) === user._id || 
+                        e.coOrganizers?.some(co => (co._id || co) === user._id)
+                    );
+                    setEvents(managedEvents);
+                } catch (error) {
+                    console.error('Failed to fetch events:', error);
+                } finally {
+                    setLoadingEvents(false);
+                }
+            };
+            fetchEvents();
+        }
+    }, [activeTab, user._id]);
+
+    useEffect(() => {
+        if (selectedEventId) {
+            const fetchEventDetails = async () => {
+                setLoadingEventDetails(true);
+                try {
+                    const { data } = await api.get(`/events/${selectedEventId}`);
+                    setEventDetails(data);
+                } catch (error) {
+                    console.error('Failed to load event details:', error);
+                } finally {
+                    setLoadingEventDetails(false);
+                }
+            };
+            fetchEventDetails();
+        } else {
+            setEventDetails(null);
+        }
+    }, [selectedEventId]);
+
+    const handleRemoveEventVolunteer = async (volunteerId) => {
+        if (!window.confirm('Are you sure you want to remove this volunteer from the event?')) return;
+        try {
+            await api.delete(`/events/${selectedEventId}/volunteers/${volunteerId}`);
+            alert('Volunteer removed.');
+            // Refresh event details
+            const { data } = await api.get(`/events/${selectedEventId}`);
+            setEventDetails(data);
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to remove volunteer');
+        }
+    };
+
     // Approve/Reject
     const handleStatusUpdate = async (id, status) => {
         try {
@@ -77,6 +145,26 @@ const OrganizerVolunteers = () => {
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', `volunteers_${oppTitle.replace(/[^a-z0-9]/gi, '_')}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            alert('Failed to export: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    // Export Event volunteers to Excel
+    const handleEventExport = async () => {
+        try {
+            const response = await api.get(`/events/${selectedEventId}/export`, {
+                responseType: 'blob'
+            });
+            const title = eventDetails?.title || 'event';
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `event_registrations_${title.replace(/[^a-z0-9]/gi, '_')}.xlsx`);
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -147,37 +235,107 @@ const OrganizerVolunteers = () => {
             <div className="dashboard-body">
                 <div className="container">
 
-                    {/* Opportunity Selector */}
+                    {/* Combined Header Card for Tabs & Selectors */}
                     <div className="card" style={{ marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                            <div style={{ flex: 1, minWidth: '250px' }}>
-                                <label className="label">Select Opportunity</label>
-                                <select
-                                    className="input"
-                                    value={selectedOpp}
-                                    onChange={handleOppChange}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <option value="">— Choose an opportunity —</option>
-                                    {opportunities.map(opp => (
-                                        <option key={opp._id} value={opp._id}>{opp.title}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {selectedOpp && (
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', paddingTop: '1.3rem' }}>
-                                    <button className="btn btn-accent" onClick={handleExport}>
-                                        📊 Export Volunteer List
-                                    </button>
-                                </div>
-                            )}
+                        {/* Tabs */}
+                        <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
+                            <button 
+                                style={{ 
+                                    padding: '0.6rem 1.5rem', 
+                                    background: activeTab === 'gigs' ? 'var(--color-primary)' : 'transparent', 
+                                    border: `1px solid ${activeTab === 'gigs' ? 'var(--color-primary)' : 'var(--color-border)'}`, 
+                                    color: activeTab === 'gigs' ? 'white' : 'var(--color-text)',
+                                    fontWeight: 600,
+                                    borderRadius: '20px',
+                                    cursor: 'pointer',
+                                    fontSize: '1.05rem',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onClick={() => setActiveTab('gigs')}
+                            >
+                                Opportunities
+                            </button>
+                            <button 
+                                style={{ 
+                                    padding: '0.6rem 1.5rem', 
+                                    background: activeTab === 'events' ? 'var(--color-primary)' : 'transparent', 
+                                    border: `1px solid ${activeTab === 'events' ? 'var(--color-primary)' : 'var(--color-border)'}`, 
+                                    color: activeTab === 'events' ? 'white' : 'var(--color-text)',
+                                    fontWeight: 600,
+                                    borderRadius: '20px',
+                                    cursor: 'pointer',
+                                    fontSize: '1.05rem',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onClick={() => setActiveTab('events')}
+                            >
+                                Volunteering Events
+                            </button>
                         </div>
+
+                        {/* Opportunity Selector */}
+                        {activeTab === 'gigs' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: '250px' }}>
+                                    <label className="label">Select Opportunity</label>
+                                    <select
+                                        className="input"
+                                        value={selectedOpp}
+                                        onChange={handleOppChange}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <option value="">— Choose an opportunity —</option>
+                                        {opportunities.map(opp => (
+                                            <option key={opp._id} value={opp._id}>{opp.title}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {selectedOpp && (
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', paddingTop: '1.3rem' }}>
+                                        <button className="btn btn-accent" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <FaFileExport /> Export Volunteer List
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Event Selector */}
+                        {activeTab === 'events' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: '250px' }}>
+                                    <label className="label">Select Event</label>
+                                    <select
+                                        className="input"
+                                        value={selectedEventId}
+                                        onChange={(e) => setSelectedEventId(e.target.value)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <option value="">— Choose an event —</option>
+                                        {events.map(ev => (
+                                            <option key={ev._id} value={ev._id}>{ev.title} ({new Date(ev.date).toLocaleDateString()})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {selectedEventId && (
+                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', paddingTop: '1.3rem' }}>
+                                        <button className="btn btn-accent" onClick={handleEventExport} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <FaFileExport /> Export Event List
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
+
+                    {activeTab === 'gigs' && (
+                        <>
 
                     {!selectedOpp && !loadingOpps && (
                         <div className="empty-state">
-                            <div className="empty-state-icon">👥</div>
+                            <div className="empty-state-icon"><FaUsers size={40} /></div>
                             <p>Select an opportunity above to view volunteer applications</p>
                         </div>
                     )}
@@ -231,7 +389,7 @@ const OrganizerVolunteers = () => {
                             <div className="card" style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                                     <div>
-                                        <h3 style={{ margin: '0 0 0.3rem', fontSize: '1rem' }}>📜 Certificate Template</h3>
+                                        <h3 style={{ margin: '0 0 0.3rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaCertificate /> Certificate Template</h3>
                                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                                             {certificateTemplate
                                                 ? 'Template uploaded'
@@ -278,6 +436,7 @@ const OrganizerVolunteers = () => {
                                                     <th>Phone</th>
                                                     <th>Email</th>
                                                     <th>Class</th>
+                                                    <th>Resume</th>
                                                     <th>Teacher Name</th>
                                                     <th>Teacher Email</th>
                                                     <th>Status</th>
@@ -291,6 +450,13 @@ const OrganizerVolunteers = () => {
                                                         <td>{app.phoneNumber}</td>
                                                         <td style={{ fontSize: '0.85rem' }}>{app.email}</td>
                                                         <td>{app.class}</td>
+                                                        <td>
+                                                            {app.studentId?.resume ? (
+                                                                <a href={`http://localhost:5000${app.studentId.resume}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#DC2626', textDecoration: 'none', fontWeight: 500 }}>
+                                                                    <FaFilePdf /> View
+                                                                </a>
+                                                            ) : '—'}
+                                                        </td>
                                                         <td>{app.teacherName}</td>
                                                         <td style={{ fontSize: '0.85rem' }}>{app.teacherEmail}</td>
                                                         <td>
@@ -305,11 +471,13 @@ const OrganizerVolunteers = () => {
                                                                         <button
                                                                             className="btn btn-success btn-sm"
                                                                             onClick={() => handleStatusUpdate(app._id, 'approved')}
-                                                                        >✓ Approve</button>
+                                                                            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                                        ><FaCheck /> Approve</button>
                                                                         <button
                                                                             className="btn btn-danger btn-sm"
                                                                             onClick={() => handleStatusUpdate(app._id, 'rejected')}
-                                                                        >✕ Reject</button>
+                                                                            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                                        ><FaTimes /> Reject</button>
                                                                     </>
                                                                 )}
                                                                 <button
@@ -330,9 +498,104 @@ const OrganizerVolunteers = () => {
                                 </div>
                             ) : (
                                 <div className="empty-state">
-                                    <div className="empty-state-icon">📋</div>
+                                    <div className="empty-state-icon"><FaClipboardList size={40} /></div>
                                     <p>No volunteer applications yet for "{oppTitle}"</p>
                                 </div>
+                            )}
+                        </>
+                    )}
+                </>
+            )}
+
+                    {activeTab === 'events' && (
+                        <>
+
+                            {!selectedEventId && !loadingEvents && (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon"><FaCalendarAlt size={40} /></div>
+                                    <p>Select an event above to view registered volunteers</p>
+                                </div>
+                            )}
+
+                            {loadingEvents && (
+                                <div className="loading-screen" style={{ height: '30vh' }}>
+                                    <div className="loader"></div>
+                                </div>
+                            )}
+
+                            {selectedEventId && loadingEventDetails && (
+                                <div className="loading-screen" style={{ height: '30vh' }}>
+                                    <div className="loader"></div>
+                                </div>
+                            )}
+
+                            {selectedEventId && eventDetails && !loadingEventDetails && (
+                                <>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                        <h3>{eventDetails.title} Attributes</h3>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                                            Total Registered: <strong style={{ color: 'var(--color-primary)' }}>{eventDetails.volunteers?.length || 0}</strong>
+                                        </div>
+                                    </div>
+
+                                    {eventDetails.volunteers && eventDetails.volunteers.length > 0 ? (
+                                        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                                            <div style={{ overflowX: 'auto' }}>
+                                                <table className="table-modern">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Name</th>
+                                                            <th>Email</th>
+                                                            <th>Headline</th>
+                                                            <th>Event Role</th>
+                                                            <th>Attendance</th>
+                                                            <th style={{ textAlign: 'right' }}>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {eventDetails.volunteers.map((vol, index) => (
+                                                            <tr key={index}>
+                                                                <td style={{ fontWeight: 600 }}>
+                                                                    <Link to={`/network/student/${vol.user?._id}`} style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>{vol.user?.name || 'Student'}</Link>
+                                                                </td>
+                                                                <td style={{ fontSize: '0.85rem' }}>{vol.user?.email || 'N/A'}</td>
+                                                                <td style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{vol.user?.headline || 'N/A'}</td>
+                                                                <td>{vol.role}</td>
+                                                                <td>
+                                                                    <span className={`badge ${vol.status === 'attended' ? 'badge-success' : 'badge-status'}`}>
+                                                                        {vol.status.toUpperCase()}
+                                                                    </span>
+                                                                </td>
+                                                                <td style={{ textAlign: 'right' }}>
+                                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                                        <Link 
+                                                                            to={`/network/student/${vol.user?._id}`} 
+                                                                            className="btn btn-outline btn-sm"
+                                                                        >
+                                                                            Profile
+                                                                        </Link>
+                                                                        <button
+                                                                            className="btn btn-outline btn-sm"
+                                                                            style={{ color: '#EF4444', borderColor: '#EF4444' }}
+                                                                            onClick={() => handleRemoveEventVolunteer(vol._id)}      
+                                                                        >
+                                                                            <FaTrash /> Remove
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="empty-state">
+                                            <div className="empty-state-icon"><FaUsers size={40} /></div>
+                                            <p>No volunteers have registered for this event yet.</p>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </>
                     )}

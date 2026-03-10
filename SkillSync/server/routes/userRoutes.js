@@ -4,7 +4,8 @@ import {
     getNetworkStudents,
     getPublicStudentProfile,
     followUser,
-    unfollowUser
+    unfollowUser,
+    getOrganizationMembers
 } from '../controllers/userController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
@@ -15,9 +16,12 @@ router.get('/profile', protect, getUserProfile);
 
 // Network functionality (Student only)
 router.route('/network').get(protect, authorize('student'), getNetworkStudents);
-router.route('/network/:id').get(protect, authorize('student'), getPublicStudentProfile);
+router.route('/network/:id').get(protect, authorize('student', 'organizer', 'admin'), getPublicStudentProfile);
 
 router.route('/:id/follow').post(protect, authorize('student'), followUser);
 router.route('/:id/unfollow').post(protect, authorize('student'), unfollowUser);
+
+// Organization functionality (Organizer only)
+router.route('/organization/members').get(protect, authorize('organizer', 'admin'), getOrganizationMembers);
 
 export default router;

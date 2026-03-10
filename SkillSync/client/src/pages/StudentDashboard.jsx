@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import LogoLoop from '../components/UI/LogoLoop';
-import { FaGithub, FaLinkedin, FaTwitter, FaGlobe, FaLink } from 'react-icons/fa';
+import { FaGithub, FaLinkedin, FaGlobe, FaLink, FaCalendarAlt, FaBullseye, FaClipboardList, FaFolderOpen, FaBriefcase, FaFilePdf, FaTrash, FaTrophy, FaEnvelope } from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
 
 const StudentDashboard = () => {
     const { user } = useAuth();
@@ -172,6 +173,11 @@ const StudentDashboard = () => {
                             </p>
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            {userProfile?.resume && (
+                                <a href={`http://localhost:5000${userProfile.resume}`} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#DC2626', color: 'white', border: 'none', textDecoration: 'none' }}>
+                                    <FaFilePdf /> Resume
+                                </a>
+                            )}
                             <Link to="/gigs" className="btn btn-accent" style={{ color: 'white' }}>
                                 Browse All Opportunities
                             </Link>
@@ -223,8 +229,9 @@ const StudentDashboard = () => {
                                         logos={[
                                             ...(userProfile.github ? [{ node: <FaGithub size={24} color="#1E293B" />, title: 'GitHub', href: userProfile.github }] : []),
                                             ...(userProfile.linkedin ? [{ node: <FaLinkedin size={24} color="#0A66C2" />, title: 'LinkedIn', href: userProfile.linkedin }] : []),
-                                            ...(userProfile.twitter ? [{ node: <FaTwitter size={24} color="#1E293B" />, title: 'Twitter', href: userProfile.twitter }] : []),
+                                            ...(userProfile.twitter ? [{ node: <FaXTwitter size={24} color="#1E293B" />, title: 'X', href: userProfile.twitter }] : []),
                                             ...(userProfile.portfolioWebsite ? [{ node: <FaGlobe size={24} color="#059669" />, title: 'Portfolio', href: userProfile.portfolioWebsite }] : []),
+                                            ...(userProfile.resume ? [{ node: <FaFilePdf size={24} color="#DC2626" />, title: 'Resume', href: `http://localhost:5000${userProfile.resume}` }] : []),
                                             ...(userProfile.customLinkUrl ? [{ node: <FaLink size={24} color="#6366F1" />, title: userProfile.customLinkName || 'Link', href: userProfile.customLinkUrl }] : [])
                                         ]}
                                         speed={120}
@@ -278,8 +285,17 @@ const StudentDashboard = () => {
                                                     {gig.description}
                                                 </p>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
-                                                    <span>📅 {new Date(gig.deadline).toLocaleDateString()}</span>
-                                                    <span>By {gig.organizer?.name}</span>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <FaCalendarAlt /> 
+                                                        {new Date(gig.deadline).getFullYear() > 2100 ? 'TBD' : new Date(gig.deadline).toLocaleDateString()}
+                                                    </span>
+                                                    <span>
+                                                        By {gig.organizer ? (
+                                                            <Link to={`/network/student/${gig.organizer._id}`} style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                                                                {gig.organizer.name}
+                                                            </Link>
+                                                        ) : 'Unknown'}
+                                                    </span>
                                                 </div>
                                                 {gig.skillsRequired?.length > 0 && (
                                                     <div className="opp-skills">
@@ -296,7 +312,7 @@ const StudentDashboard = () => {
                                     </div>
                                 ) : (
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">🎯</div>
+                                        <div className="empty-state-icon"><FaBullseye size={40} /></div>
                                         <p>No open opportunities right now. Check back soon!</p>
                                     </div>
                                 )}
@@ -313,7 +329,11 @@ const StudentDashboard = () => {
                                                 <div>
                                                     <h4 style={{ margin: '0 0 0.3rem' }}>{app.gig?.title || 'Untitled Opportunity'}</h4>
                                                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                                                        By {app.gig?.organizer?.name || 'Unknown'} • Applied {new Date(app.createdAt).toLocaleDateString()}
+                                                        By {app.gig?.organizer ? (
+                                                            <Link to={`/network/student/${app.gig.organizer._id || app.gig.organizer}`} style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                                                                {app.gig.organizer.name}
+                                                            </Link>
+                                                        ) : 'Unknown'} • Applied {new Date(app.createdAt).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -322,9 +342,20 @@ const StudentDashboard = () => {
                                                         {app.status}
                                                     </span>
                                                     {app.gig && (
-                                                        <Link to={`/gigs/${app.gig._id}`} className="btn btn-outline btn-sm" style={{ textDecoration: 'none' }}>
-                                                            View
-                                                        </Link>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            {app.gig?.organizer && (app.gig.organizer.email || typeof app.gig.organizer === 'object') && (
+                                                                <a 
+                                                                    href={`mailto:${app.gig.organizer.email || ''}?subject=Question regarding: ${app.gig.title}`} 
+                                                                    className="btn btn-outline btn-sm" 
+                                                                    style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', color: '#4B5563', borderColor: '#D1D5DB' }}
+                                                                >
+                                                                    <FaEnvelope /> Contact Organizer
+                                                                </a>
+                                                            )}
+                                                            <Link to={`/gigs/${app.gig._id}`} className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>
+                                                                View Details
+                                                            </Link>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -332,7 +363,7 @@ const StudentDashboard = () => {
                                     </div>
                                 ) : (
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">📋</div>
+                                        <div className="empty-state-icon"><FaClipboardList size={40} /></div>
                                         <p>You haven't applied to any opportunities yet.</p>
                                     </div>
                                 )}
@@ -343,7 +374,7 @@ const StudentDashboard = () => {
                         {activeTab === 'portfolio' && (
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>📁 Academic Portfolio</h3>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaFolderOpen /> Academic Portfolio</h3>
                                     <button className="btn btn-accent" onClick={() => openPortfolioModal()}>
                                         + Add Project
                                     </button>
@@ -356,7 +387,7 @@ const StudentDashboard = () => {
                                                     <img src={item.image} alt={item.title} className="portfolio-img" />
                                                 ) : (
                                                     <div style={{ height: '160px', background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', borderBottom: '1px solid var(--color-border)' }}>
-                                                        💼
+                                                        <FaBriefcase />
                                                     </div>
                                                 )}
                                                 <div className="portfolio-body">
@@ -367,16 +398,16 @@ const StudentDashboard = () => {
                                                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                                         {(item.link || item.projectLink) && (
                                                             <a href={item.projectLink || item.link} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{ textDecoration: 'none', flex: 1 }}>
-                                                                🔗 View
+                                                                <FaLink /> View
                                                             </a>
                                                         )}
                                                         {item.portfolioPDF && (
                                                             <a href={`${api.defaults.baseURL?.replace('/api', '')}${item.portfolioPDF}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{ textDecoration: 'none', flex: 1, color: '#DC2626', borderColor: '#FECACA' }}>
-                                                                📄 PDF
+                                                                <FaFilePdf /> PDF
                                                             </a>
                                                         )}
                                                         <button className="btn btn-secondary btn-sm" onClick={() => openPortfolioModal(item)} style={{ flex: 1 }}>Edit</button>
-                                                        <button className="btn btn-danger btn-sm btn-icon" onClick={() => handleDeletePortfolio(item._id)}>🗑</button>
+                                                        <button className="btn btn-danger btn-sm btn-icon" onClick={() => handleDeletePortfolio(item._id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash /></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -384,7 +415,7 @@ const StudentDashboard = () => {
                                     </div>
                                 ) : (
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">💼</div>
+                                        <div className="empty-state-icon"><FaBriefcase size={40} /></div>
                                         <p>No projects yet. Add your first project to build your portfolio!</p>
                                     </div>
                                 )}
@@ -407,24 +438,24 @@ const StudentDashboard = () => {
                                                     <h4 style={{ margin: '0 0 0.3rem' }}>{ach.title}</h4>
                                                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: '0 0 0.3rem' }}>{ach.description}</p>
                                                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                                        <small style={{ color: 'var(--color-text-muted)' }}>📅 {new Date(ach.date).toLocaleDateString()}</small>
+                                                        <small style={{ color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><FaCalendarAlt /> {new Date(ach.date).toLocaleDateString()}</small>
                                                         {ach.certificateLink && (
                                                             <a href={ach.certificateLink} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem' }}>
-                                                                🔗 View Certificate
+                                                                <FaLink /> View Certificate
                                                             </a>
                                                         )}
                                                     </div>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0, marginLeft: '1rem' }}>
                                                     <button className="btn btn-secondary btn-sm" onClick={() => openAchievementModal(ach)}>Edit</button>
-                                                    <button className="btn btn-danger btn-sm btn-icon" onClick={() => handleDeleteAchievement(ach._id)}>🗑</button>
+                                                    <button className="btn btn-danger btn-sm btn-icon" onClick={() => handleDeleteAchievement(ach._id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash /></button>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">🏆</div>
+                                        <div className="empty-state-icon"><FaTrophy size={40} /></div>
                                         <p>No achievements yet. Add your awards and certifications!</p>
                                     </div>
                                 )}
@@ -460,7 +491,7 @@ const StudentDashboard = () => {
                                 <input className="input" value={portfolioForm.image} onChange={e => setPortfolioForm({ ...portfolioForm, image: e.target.value })} placeholder="https://..." />
                             </div>
                             <div className="input-group">
-                                <label className="label">📄 Upload PDF (Resume, Report, etc.)</label>
+                                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaFilePdf /> Upload PDF (Resume, Report, etc.)</label>
                                 <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])} className="input" style={{ padding: '0.5rem' }} />
                                 {editingPortfolio?.portfolioPDF && !pdfFile && (
                                     <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0.3rem 0 0' }}>Current PDF attached. Upload a new one to replace.</p>

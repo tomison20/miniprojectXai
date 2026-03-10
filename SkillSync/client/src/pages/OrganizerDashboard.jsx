@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { FaClipboardList, FaCalendarAlt, FaComments, FaTrash, FaCheck, FaTimes, FaEnvelope, FaUsers, FaMapMarkerAlt, FaChevronDown, FaChevronUp, FaFolderOpen, FaBriefcase, FaFilePdf, FaLink } from 'react-icons/fa';
 
 const OrganizerDashboard = () => {
     const { user } = useAuth();
@@ -10,20 +11,23 @@ const OrganizerDashboard = () => {
     const [myEvents, setMyEvents] = useState([]);
     const [expandedGig, setExpandedGig] = useState(null);
     const [gigApplications, setGigApplications] = useState({});
+    const [studentWorks, setStudentWorks] = useState([]);
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [gigsRes, eventsRes, profileRes] = await Promise.all([
+                const [gigsRes, eventsRes, worksRes, profileRes] = await Promise.all([
                     api.get('/gigs'),
                     api.get('/events'),
+                    api.get('/portfolios/organization'),
                     api.get('/auth/profile')
                 ]);
                 // Filter gigs created by this organizer
                 setMyOpportunities(gigsRes.data.filter(g => g.organizer?._id === user._id));
                 setMyEvents(eventsRes.data.filter(e => e.organizer?._id === user._id || e.organizer === user._id));
+                setStudentWorks(worksRes.data);
                 setUserProfile(profileRes.data);
             } catch (error) {
                 console.error('Organizer dashboard fetch error:', error);
@@ -104,8 +108,9 @@ const OrganizerDashboard = () => {
     const totalApplicants = myOpportunities.reduce((acc, g) => acc + (gigApplications[g._id]?.length || 0), 0);
 
     const tabs = [
-        { id: 'opportunities', label: '📋 Opportunities', count: myOpportunities.length },
-        { id: 'events', label: '📅 Events', count: myEvents.length },
+        { id: 'opportunities', label: <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaClipboardList /> Opportunities</span>, count: myOpportunities.length },
+        { id: 'events', label: <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaCalendarAlt /> Events</span>, count: myEvents.length },
+        { id: 'works', label: <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaFolderOpen /> Student Works</span>, count: studentWorks.length },
     ];
 
     return (
@@ -153,7 +158,7 @@ const OrganizerDashboard = () => {
                                 <div style={{ flex: 1, minWidth: '200px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
                                         <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{userProfile.name}</h3>
-                                        <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>✓ Verified Organizer</span>
+                                        <span className="badge badge-success" style={{ fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '4px' }}><FaCheck /> Verified Organizer</span>
                                     </div>
                                     <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                                         {userProfile.headline || 'Opportunity Provider'}
@@ -240,16 +245,21 @@ const OrganizerDashboard = () => {
                                                             <button
                                                                 className="btn btn-outline btn-sm"
                                                                 onClick={() => toggleApplications(gig._id)}
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                                                             >
-                                                                {expandedGig === gig._id ? '▲ Hide' : '▼ Applications'}
+                                                                {expandedGig === gig._id ? <><FaChevronUp /> Hide</> : <><FaChevronDown /> Applications</>}
                                                             </button>
+                                                            <Link to={`/chat/group/${gig._id}`} className="btn btn-primary btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <FaComments /> Group Chat
+                                                            </Link>
                                                             <Link to={`/gigs/${gig._id}`} className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>
                                                                 View
                                                             </Link>
                                                             <button
                                                                 className="btn btn-danger btn-sm btn-icon"
                                                                 onClick={() => handleDeleteGig(gig._id)}
-                                                            >🗑</button>
+                                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                            ><FaTrash /></button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -257,36 +267,46 @@ const OrganizerDashboard = () => {
                                                 {expandedGig === gig._id && (
                                                     <tr key={`${gig._id}-apps`}>
                                                         <td colSpan="5" style={{ background: '#FAFBFC', padding: '1.25rem' }}>
-                                                            <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem' }}>
-                                                                📩 Student Applications for "{gig.title}"
+                                                            <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <FaEnvelope /> Student Applications for "{gig.title}"
                                                             </h4>
                                                             {gigApplications[gig._id]?.length > 0 ? (
                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                                     {gigApplications[gig._id].map(app => (
                                                                         <div key={app._id} className="applicant-card">
-                                                                            <div className="applicant-avatar">
+                                                                            <Link to={`/network/student/${app.freelancer?._id}`} className="applicant-avatar" style={{ textDecoration: 'none', color: 'inherit' }}>
                                                                                 {app.freelancer?.name?.charAt(0) || '?'}
-                                                                            </div>
+                                                                            </Link>
                                                                             <div style={{ flex: 1 }}>
                                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                                     <div>
-                                                                                        <strong>{app.freelancer?.name || 'Student'}</strong>
+                                                                                        <Link to={`/network/student/${app.freelancer?._id}`} style={{ fontWeight: 700, color: 'var(--color-primary)', textDecoration: 'none' }}>{app.freelancer?.name || 'Student'}</Link>
                                                                                         <span style={{ marginLeft: '0.5rem' }} className={`badge badge-${app.status === 'pending' ? 'warning' : app.status === 'accepted' ? 'success' : 'error'}`}>
                                                                                             {app.status}
                                                                                         </span>
-                                                                                        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0.2rem 0' }}>
+                                                                                        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0.4rem 0 0.2rem' }}>
                                                                                             {app.freelancer?.email}
                                                                                         </p>
+                                                                                        {app.freelancer?.resume && (
+                                                                                            <a href={`http://localhost:5000${app.freelancer.resume}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', color: '#DC2626', textDecoration: 'none', fontWeight: 600, marginTop: '0.2rem' }}>
+                                                                                                <FaFilePdf /> View Resume
+                                                                                            </a>
+                                                                                        )}
                                                                                     </div>
                                                                                     {app.status === 'pending' && (
                                                                                         <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                                                                            <button className="btn btn-success btn-sm" onClick={() => handleApprove(gig._id, app._id)}>
-                                                                                                ✓ Approve
+                                                                                            <button className="btn btn-success btn-sm" onClick={() => handleApprove(gig._id, app._id)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                                <FaCheck /> Approve
                                                                                             </button>
-                                                                                            <button className="btn btn-danger btn-sm" onClick={() => handleReject(gig._id, app._id)}>
-                                                                                                ✕ Reject
+                                                                                            <button className="btn btn-danger btn-sm" onClick={() => handleReject(gig._id, app._id)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                                <FaTimes /> Reject
                                                                                             </button>
                                                                                         </div>
+                                                                                    )}
+                                                                                    {app.freelancer?._id && (
+                                                                                        <Link to={`/chat/${app.freelancer._id}`} className="btn btn-outline btn-sm" style={{ padding: '0.3rem 0.6rem', marginTop: app.status === 'pending' ? '0' : '0.2rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                                                            <FaComments /> Message
+                                                                                        </Link>
                                                                                     )}
                                                                                 </div>
                                                                                 <p style={{ fontSize: '0.85rem', margin: '0.5rem 0 0', padding: '0.75rem', background: 'white', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
@@ -317,7 +337,7 @@ const OrganizerDashboard = () => {
                                             <tr>
                                                 <td colSpan="5">
                                                     <div className="empty-state">
-                                                        <div className="empty-state-icon">📋</div>
+                                                        <div className="empty-state-icon"><FaClipboardList size={40} /></div>
                                                         <p>No opportunities created yet. Create your first one!</p>
                                                     </div>
                                                 </td>
@@ -345,8 +365,8 @@ const OrganizerDashboard = () => {
                                                     {event.description}
                                                 </p>
                                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                                    <span>📅 {new Date(event.date).toLocaleDateString()}</span>
-                                                    <span>📍 {event.location}</span>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaCalendarAlt /> {new Date(event.date).toLocaleDateString()}</span>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FaMapMarkerAlt /> {event.location}</span>
                                                 </div>
                                                 <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#FAFBFC', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem' }}>
                                                     <strong>Volunteers:</strong> {event.volunteers?.length || 0}
@@ -361,19 +381,90 @@ const OrganizerDashboard = () => {
                                     </div>
                                 ) : (
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">📅</div>
+                                        <div className="empty-state-icon"><FaCalendarAlt size={40} /></div>
                                         <p>No events created yet. Create a volunteering event!</p>
                                     </div>
                                 )}
                             </div>
                         )}
+                        {/* END EVENTS TAB */}
+
+                        {/* STUDENT WORKS TAB */}
+                        {activeTab === 'works' && (
+                            <div className="custom-grid">
+                                {studentWorks.length === 0 ? (
+                                    <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem' }}>
+                                        <div className="empty-state-icon"><FaBriefcase size={40} /></div>
+                                        <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>No specific works uploaded yet</h3>
+                                        <p style={{ color: 'var(--text-secondary)' }}>Students within your organization haven't published any portfolio items.</p>
+                                    </div>
+                                ) : (
+                                    studentWorks.map(item => (
+                                        <div key={item._id} className="card project-card hover-glow" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                            {item.image ? (
+                                                <div style={{ height: '180px', width: '100%', overflow: 'hidden' }}>
+                                                    <img
+                                                        src={item.image.startsWith('http') ? item.image : `http://localhost:5000${item.image}`}
+                                                        alt={item.title}
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div style={{ height: '80px', width: '100%', background: 'linear-gradient(135deg, var(--color-surface-hover), var(--color-surface))' }}></div>
+                                            )}
+                                            <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                {/* Author Context */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--color-border)' }}>
+                                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 600, overflow: 'hidden', flexShrink: 0 }}>
+                                                        {item.student?.avatar ? (
+                                                            <img src={`http://localhost:5000${item.student.avatar}`} alt={item.student.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            item.student?.name?.charAt(0) || 'S'
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <Link to={`/network/student/${item.student?._id}`} style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>
+                                                            <strong style={{ display: 'block', fontSize: '0.95rem' }}>{item.student?.name}</strong>
+                                                        </Link>
+                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.student?.headline || 'Student Contributor'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{item.title}</h3>
+                                                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', flex: 1 }}>{item.description}</p>
+                                                
+                                                <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
+                                                    {item.projectLink && (
+                                                        <a href={item.projectLink} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                                            <FaLink /> Web
+                                                        </a>
+                                                    )}
+                                                    {item.link && (
+                                                        <a href={item.link.startsWith('http') ? item.link : `http://localhost:5000${item.link}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                                            <FaLink /> Proof
+                                                        </a>
+                                                    )}
+                                                    {item.portfolioPDF && (
+                                                        <a href={`http://localhost:5000${item.portfolioPDF}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--color-error)' }}>
+                                                            <FaFilePdf /> PDF
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+                        {/* END STUDENT WORKS TAB */}
+
                     </div>
 
                     {/* Volunteer Management Section */}
                     <div className="card" style={{ marginTop: '1.5rem', borderLeft: '4px solid #7C3AED' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h3 style={{ margin: '0 0 0.3rem', fontSize: '1.1rem' }}>👥 Volunteer Management</h3>
+                                <h3 style={{ margin: '0 0 0.3rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><FaUsers /> Volunteer Management</h3>
                                 <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
                                     View applications, approve volunteers, export lists, and send duty leave emails
                                 </p>

@@ -7,7 +7,6 @@ const LogoLoop = ({
     direction = 'left',
     logoHeight = 60,
     gap = 60,
-    hoverSpeed = 0,
     scaleOnHover = true,
     fadeOut = true,
     fadeOutColor = '#ffffff',

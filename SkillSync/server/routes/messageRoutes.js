@@ -1,12 +1,22 @@
 import express from 'express';
-import { sendMessage, getConversation, getConversationsList } from '../controllers/messageController.js';
+import { sendMessage, getConversation, getConversationsList, getGroupConversation, sendGroupMessage } from '../controllers/messageController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// Allow both students and organizers to access messaging APIs
+const authMessaging = authorize('student', 'organizer', 'admin');
+
 // MUST be before /:userId to avoid param collision
-router.route('/').get(protect, authorize('student'), getConversationsList);
-router.route('/:receiverId').post(protect, authorize('student'), sendMessage);
-router.route('/:userId').get(protect, authorize('student'), getConversation);
+router.route('/').get(protect, authMessaging, getConversationsList);
+
+// Group Chat Routes
+router.route('/group/:gigId')
+    .get(protect, authMessaging, getGroupConversation)
+    .post(protect, authMessaging, sendGroupMessage);
+
+// 1-on-1 Chat Routes
+router.route('/:receiverId').post(protect, authMessaging, sendMessage);
+router.route('/:userId').get(protect, authMessaging, getConversation);
 
 export default router;

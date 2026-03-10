@@ -81,7 +81,8 @@ export const getVolunteerApplications = async (req, res) => {
 
         const applications = await VolunteerApplication.find({
             opportunityId: req.params.opportunityId
-        }).sort({ appliedAt: -1 });
+        }).sort({ appliedAt: -1 })
+          .populate('studentId', 'resume');
 
         res.json({
             applications,

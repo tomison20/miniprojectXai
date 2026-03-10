@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -14,7 +14,27 @@ const CreateEvent = () => {
         roleDescription: 'General volunteering tasks'
     });
 
+    const [members, setMembers] = useState([]);
+    const [selectedCoOrganizers, setSelectedCoOrganizers] = useState([]);
+
+    useEffect(() => {
+        const fetchMembers = async () => {
+            try {
+                const res = await api.get('/users/organization/members');
+                setMembers(res.data);
+            } catch (error) {
+                console.error("Failed to fetch organization members", error);
+            }
+        };
+        fetchMembers();
+    }, []);
+
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    const handleCoOrganizerChange = (e) => {
+        const value = Array.from(e.target.selectedOptions, option => option.value);
+        setSelectedCoOrganizers(value);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -25,6 +45,7 @@ const CreateEvent = () => {
                 description: formData.description,
                 date: formData.date,
                 location: formData.location,
+                coOrganizers: selectedCoOrganizers,
                 roles: [{
                     name: formData.roleName,
                     capacity: parseInt(formData.roleCapacity),
@@ -63,6 +84,23 @@ const CreateEvent = () => {
                             <label className="label">Location</label>
                             <input className="input" name="location" onChange={handleChange} required placeholder="e.g. Student Center" />
                         </div>
+                    </div>
+
+                    <div className="input-group">
+                        <label className="label">Co-Organizers (Optional, Hold Ctrl/Cmd to select multiple)</label>
+                        <select 
+                            className="input" 
+                            multiple 
+                            style={{ height: 'auto', minHeight: '100px' }}
+                            value={selectedCoOrganizers}
+                            onChange={handleCoOrganizerChange}
+                        >
+                            {members.map(member => (
+                                <option key={member._id} value={member._id} style={{ padding: '0.5rem' }}>
+                                    {member.name} ({member.email})
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem', fontSize: '1.2rem' }}>Primary Volunteer Role</h3>

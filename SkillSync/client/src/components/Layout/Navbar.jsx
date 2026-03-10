@@ -85,7 +85,7 @@ const Navbar = () => {
                                 </Link>
                             )}
 
-                            {user.role === 'student' && (
+                            {(user.role === 'student' || user.role === 'organizer') && (
                                 <Link to="/messages" style={navLinkStyle('/messages')}>
                                     Inbox
                                 </Link>
