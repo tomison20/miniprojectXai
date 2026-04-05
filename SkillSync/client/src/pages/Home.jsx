@@ -8,8 +8,7 @@ const Home = () => {
 
     return (
         <div>
-            {/* ... (Hero section setup remains unchanged) */}
-            <section style={{
+            <section className="hero-section" style={{
                 position: 'relative',
                 height: '85vh',
                 display: 'flex',
@@ -40,7 +39,7 @@ const Home = () => {
                 }}></div>
 
                 <div className="container" style={{ position: 'relative', zIndex: 3, textAlign: 'center', maxWidth: '900px', marginTop: '4rem' }}>
-                    <span style={{
+                    <span className="hero-tagline" style={{
                         display: 'inline-block',
                         padding: '0.5rem 1rem',
                         border: '1px solid rgba(255,255,255,0.3)',
@@ -56,7 +55,7 @@ const Home = () => {
                         Connect & Conquer
                     </span>
 
-                    <h1 style={{
+                    <h1 className="hero-title" style={{
                         fontSize: '4.5rem',
                         marginBottom: '1.5rem',
                         letterSpacing: '-0.02em',
@@ -68,7 +67,7 @@ const Home = () => {
                         Where Ambition Meets <br /> <span style={{ fontStyle: 'italic', fontFamily: 'serif' }}>Opportunity.</span>
                     </h1>
 
-                    <p style={{
+                    <p className="hero-subtitle" style={{
                         fontSize: '1.35rem',
                         color: 'var(--color-border-dark)',
                         marginBottom: '3.5rem',
@@ -80,7 +79,7 @@ const Home = () => {
                         SkillSync is the premier platform for students to secure freelance work, engage in verified volunteering, and build an institutional portfolio.
                     </p>
 
-                    <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
+                    <div className="hero-buttons" style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
                         {user ? (
                             <>
                                 <Link to={`/dashboard/${user.role}`} className="btn" style={{
@@ -124,7 +123,7 @@ const Home = () => {
 
             {/* Institutional Trust Bar */}
             <div style={{ borderBottom: '1px solid #D8EAD0', background: 'var(--color-bg-elevated)', padding: '3rem 0' }}>
-                <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', textAlign: 'center' }}>
+                <div className="container trust-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', textAlign: 'center' }}>
                     <div style={{ padding: '0 1rem' }}>
                         <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-serif)', marginBottom: '0.5rem' }}>Built for Your Institution</div>
                         <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-secondary)' }}>Verified Access</div>
@@ -140,10 +139,10 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* Value Preposition */}
-            <section style={{ padding: '8rem 0', background: 'var(--color-bg-card)' }}>
+            {/* Value Proposition */}
+            <section className="section-padding" style={{ padding: '8rem 0', background: 'var(--color-bg-card)' }}>
                 <div className="container">
-                    <div className="grid-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4rem' }}>
+                    <div className="value-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4rem' }}>
                         <div>
                             <div style={{ width: 50, height: 50, background: 'var(--color-bg-elevated)', borderRadius: '50%', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent)' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
@@ -65,11 +65,31 @@ const Navbar = () => {
     const location = useLocation();
     const { user, logout } = useAuth();
     const [theme, setTheme] = useState(localStorage.getItem('skillsync-theme') || 'light');
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const drawerRef = useRef(null);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('skillsync-theme', theme);
     }, [theme]);
+
+    // Close mobile menu on route change
+    useEffect(() => {
+        setMobileOpen(false);
+    }, [location.pathname]);
+
+    // Close mobile menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+                setMobileOpen(false);
+            }
+        };
+        if (mobileOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [mobileOpen]);
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -98,10 +118,28 @@ const Navbar = () => {
         borderBottom: isActive(path) ? '2px solid var(--color-accent)' : '2px solid transparent',
     });
 
+    const mobileNavLinkStyle = (path) => ({
+        textDecoration: 'none',
+        color: isActive(path) ? 'var(--color-accent)' : 'var(--color-secondary)',
+        fontWeight: isActive(path) ? '600' : '500',
+        fontSize: '0.95rem',
+        fontFamily: 'var(--font-sans)',
+        padding: '0.75rem 1rem',
+        display: 'block',
+        borderLeft: isActive(path) ? '3px solid var(--color-accent)' : '3px solid transparent',
+        background: isActive(path) ? 'var(--color-bg-elevated, #F0F5EC)' : 'transparent',
+        borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
+        transition: 'all 0.15s ease',
+    });
+
     const getDashboardPath = () => {
         if (!user) return '/dashboard';
         return `/dashboard/${user.role}`;
     };
+
+    const avatarSrc = user?.avatar
+        ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.MODE === 'production' ? 'https://skillsync-0xug.onrender.com' : 'http://localhost:5000'}${user.avatar}`)
+        : null;
 
     return (
         <nav style={{
@@ -130,13 +168,14 @@ const Navbar = () => {
                     textDecoration: 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
+                    flexShrink: 0
                 }}>
                     SkillSync
                 </Link>
 
-                {/* Navigation Links */}
-                <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                {/* Desktop Navigation Links */}
+                <div className="nav-desktop" style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
 
                     {user ? (
                         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
@@ -188,8 +227,8 @@ const Navbar = () => {
                                         fontWeight: 700,
                                         overflow: 'hidden'
                                     }}>
-                                        {user.avatar ?
-                                            <img src={user.avatar.startsWith('http') ? user.avatar : (user.avatar?.startsWith('http') ? user.avatar : `${import.meta.env.MODE === 'production' ? 'https://skillsync-0xug.onrender.com' : 'http://localhost:5000'}${user.avatar}`)} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                        {avatarSrc ?
+                                            <img src={avatarSrc} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                                             : user.name?.charAt(0)?.toUpperCase()
                                         }
                                     </div>
@@ -227,7 +266,146 @@ const Navbar = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Mobile: Theme + Avatar + Hamburger */}
+                <div className="nav-mobile-controls" style={{ display: 'none', alignItems: 'center', gap: '0.5rem' }}>
+                    <ThemeToggle theme={theme} onToggle={toggleTheme} />
+
+                    {user && (
+                        <Link to="/profile" style={{ textDecoration: 'none', display: 'flex' }}>
+                            <div style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-hover))',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                overflow: 'hidden'
+                            }}>
+                                {avatarSrc ?
+                                    <img src={avatarSrc} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                    : user.name?.charAt(0)?.toUpperCase()
+                                }
+                            </div>
+                        </Link>
+                    )}
+
+                    <button
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        aria-label="Toggle menu"
+                        style={{
+                            background: 'none',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '0.4rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '36px',
+                            height: '36px',
+                            color: 'var(--color-primary)',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        {mobileOpen ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                        )}
+                    </button>
+                </div>
             </div>
+
+            {/* Mobile Drawer */}
+            {mobileOpen && (
+                <div
+                    ref={drawerRef}
+                    className="nav-mobile-drawer"
+                    style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        background: 'var(--color-bg-card)',
+                        borderBottom: '1px solid var(--color-border)',
+                        boxShadow: 'var(--shadow-elevated)',
+                        padding: '0.5rem 0',
+                        animation: 'slideDown 0.2s ease-out',
+                        zIndex: 199
+                    }}
+                >
+                    <div style={{ padding: '0.25rem 0.75rem', fontFamily: 'var(--font-sans)' }}>
+                        {user ? (
+                            <>
+                                <Link to={getDashboardPath()} style={mobileNavLinkStyle('/dashboard')}>
+                                    Dashboard
+                                </Link>
+                                <Link to="/gigs" style={mobileNavLinkStyle('/gigs')}>
+                                    Opportunities
+                                </Link>
+                                <Link to="/volunteering" style={mobileNavLinkStyle('/volunteering')}>
+                                    Volunteering
+                                </Link>
+                                {user.role === 'student' && (
+                                    <Link to="/network" style={mobileNavLinkStyle('/network')}>
+                                        College Network
+                                    </Link>
+                                )}
+                                {(user.role === 'student' || user.role === 'organizer') && (
+                                    <Link to="/messages" style={mobileNavLinkStyle('/messages')}>
+                                        Inbox
+                                    </Link>
+                                )}
+                                <Link to="/profile" style={mobileNavLinkStyle('/profile')}>
+                                    Edit Profile
+                                </Link>
+
+                                <div style={{ borderTop: '1px solid var(--color-border)', margin: '0.5rem 0' }}></div>
+
+                                <button
+                                    onClick={handleLogout}
+                                    style={{
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        background: 'none',
+                                        border: 'none',
+                                        padding: '0.75rem 1rem',
+                                        color: 'var(--color-error)',
+                                        fontWeight: '500',
+                                        fontSize: '0.95rem',
+                                        cursor: 'pointer',
+                                        fontFamily: 'var(--font-sans)',
+                                        borderLeft: '3px solid transparent',
+                                    }}
+                                >
+                                    Sign Out
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link to="/login" style={mobileNavLinkStyle('/login')}>
+                                    Log In
+                                </Link>
+                                <Link to="/signup" style={mobileNavLinkStyle('/signup')}>
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </nav >
     );
 };

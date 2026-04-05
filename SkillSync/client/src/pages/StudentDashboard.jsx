@@ -179,7 +179,7 @@ const StudentDashboard = () => {
             {/* Header */}
             <div className="dashboard-header student-header">
                 <div className="container">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div className="dash-header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                         <div>
                             <p style={{ opacity: 0.7, fontSize: '0.85rem', marginBottom: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                                 {user?.organization?.name} • Student Portal
@@ -191,7 +191,7 @@ const StudentDashboard = () => {
                                 {user?.headline || 'Build your academic portfolio and grow your skills'}
                             </p>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <div className="dashboard-header-actions" style={{ display: 'flex', gap: '0.75rem' }}>
                             {userProfile?.resume && (
                                 <a href={(userProfile.resume?.startsWith('http') ? userProfile.resume : `${import.meta.env.MODE === 'production' ? 'https://skillsync-0xug.onrender.com' : 'http://localhost:5000'}${userProfile.resume}`)} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-error)', color: 'white', border: 'none', textDecoration: 'none' }}>
                                     <FaFilePdf /> Resume
@@ -344,7 +344,7 @@ const StudentDashboard = () => {
                                 {myApplications.length > 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                         {myApplications.map(app => (
-                                            <div key={app._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div key={app._id} className="card app-card-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
                                                     <h4 style={{ margin: '0 0 0.3rem' }}>{app.gig?.title || 'Untitled Opportunity'}</h4>
                                                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
